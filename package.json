@@ -1,18 +1,17 @@
 {
-  "name": "miniamazon",
+  "name": "afghan-amazon",
   "version": "1.0.0",
+  "description": "A learning project for an e-commerce platform with bilingual support (English and Pashto)",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "body-parser": "^2.2.0",
-    "express": "^5.1.0",
-    "sqlite3": "^5.1.7"
-  }
+    "express": "^4.17.1",
+    "better-sqlite3": "^8.0.0",
+    "body-parser": "^1.19.0"
+  },
+  "author": "Your Name",
+  "license": "MIT"
 }
