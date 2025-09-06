@@ -1,71 +1,53 @@
 const express = require('express');
-const Database = require('better-sqlite3');
 const bodyParser = require('body-parser');
+const Database = require('better-sqlite3'); // Changed from sqlite3
+
 const app = express();
+const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(bodyParser.json());
+app.use(express.static('public'));
 
-// Initialize database
-const db = new Database('database.db', { verbose: console.log });
+// Database setup with better-sqlite3
+const db = new Database('database.db');
 
-// Seed database (create tables and insert initial data)
+// Create table if not exists
 db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT,
-    password TEXT,
-    role TEXT
-  );
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    price REAL,
-    seller_id INTEGER,
-    location_id INTEGER,
-    category TEXT
-  );
-  CREATE TABLE IF NOT EXISTS locations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    city TEXT
-  );
-  INSERT OR IGNORE INTO locations (name, city) VALUES
-    ('Hub 1', 'Jalalabad'),
-    ('Hub 2', 'Kabul'),
-    ('Hub 3', 'Kandahar'),
-    ('Hub 4', 'Herat'),
-    ('Hub 5', 'Balkh');
+    name TEXT NOT NULL,
+    price REAL NOT NULL,
+    description TEXT
+  )
 `);
 
-// API endpoints
-app.get('/locations', (req, res) => {
-  const stmt = db.prepare('SELECT * FROM locations');
-  const rows = stmt.all();
-  res.json(rows);
+// Routes
+app.get('/api/products', (req, res) => {
+  try {
+    const stmt = db.prepare('SELECT * FROM products');
+    const products = stmt.all();
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.get('/products', (req, res) => {
-  const stmt = db.prepare(`
-    SELECT p.*, u.username as seller, l.name as location_name, l.city as location_city 
-    FROM products p 
-    JOIN users u ON p.seller_id = u.id 
-    JOIN locations l ON p.location_id = l.id
-  `);
-  const rows = stmt.all();
-  res.json(rows);
+app.post('/api/products', (req, res) => {
+  try {
+    const { name, price, description } = req.body;
+    const stmt = db.prepare('INSERT INTO products (name, price, description) VALUES (?, ?, ?)');
+    const result = stmt.run(name, price, description);
+    res.json({ id: result.lastInsertRowid, name, price, description });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/register', (req, res) => {
-  const { username, password, role } = req.body;
-  const stmt = db.prepare('INSERT INTO users (username, password, role) VALUES (?, ?, ?)');
-  const info = stmt.run(username, password, role);
-  res.json({ id: info.lastInsertRowid } || { error: 'Registration failed' });
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
-// Add other endpoints (login, products, cart) similarly...
-
-// Start server (for local testing)
-app.listen(3000, () => console.log('Server running at http://localhost:3000'));
-
-// For Vercel, export the app
+// Export for Vercel
 module.exports = app;

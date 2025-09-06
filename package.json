@@ -1,17 +1,14 @@
 {
   "name": "afghan-amazon",
   "version": "1.0.0",
-  "description": "A learning project for an e-commerce platform with bilingual support (English and Pashto)",
+  "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.17.1",
     "better-sqlite3": "^8.0.0",
     "body-parser": "^1.19.0"
-  },
-  "author": "Your Name",
-  "license": "MIT"
+  }
 }
