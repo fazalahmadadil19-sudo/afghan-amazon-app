@@ -1,37 +1,45 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
-const app = express();
+const Database = require('better-sqlite3');
 
-// Serve static files from the 'public' directory
+const app = express();
+const port = 3000;
+
+// Initialize database
+const db = new Database('afghan_amazon.db', { verbose: console.log });
+
+// Create a table if it doesn't exist
+db.exec(`
+  CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    price REAL NOT NULL,
+    category TEXT
+  )
+`);
+
+// Middleware
+app.use(bodyParser.json());
 app.use(express.static('public'));
 
-app.use(bodyParser.json());
-
-const db = new sqlite3.Database('database.db', (err) => {
-  if (err) console.error('Database error:', err.message);
-  else console.log('Connected to database.');
+// Sample route to get all products
+app.get('/api/products', (req, res) => {
+  const stmt = db.prepare('SELECT * FROM products');
+  const products = stmt.all();
+  res.json(products);
 });
 
-db.serialize(() => {
-  db.run("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT, role TEXT)");
-  db.run("CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY, name TEXT, price REAL, seller_id INTEGER, location_id INTEGER, category TEXT)");
-  db.run("CREATE TABLE IF NOT EXISTS locations (id INTEGER PRIMARY KEY, name TEXT, city TEXT)");
-  db.run("INSERT OR IGNORE INTO locations (name, city) VALUES ('Hub 1', 'Jalalabad'), ('Hub 2', 'Kabul'), ('Hub 3', 'Kandahar'), ('Hub 4', 'Herat'), ('Hub 5', 'Balkh')");
+// Sample route to add a product
+app.post('/api/products', (req, res) => {
+  const { name, price, category } = req.body;
+  const stmt = db.prepare('INSERT INTO products (name, price, category) VALUES (?, ?, ?)');
+  const info = stmt.run(name, price, category);
+  res.json({ id: info.lastInsertRowid, name, price, category });
 });
 
-app.get('/locations', (req, res) => {
-  db.all("SELECT * FROM locations", [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+// Start server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
 
-app.get('/products', (req, res) => {
-  db.all("SELECT p.*, u.username as seller, l.name as location_name, l.city as location_city FROM products p JOIN users u ON p.seller_id = u.id JOIN locations l ON p.location_id = l.id", [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-app.listen(3000, () => console.log('Server running at http://localhost:3000'));
+module.exports = app;
